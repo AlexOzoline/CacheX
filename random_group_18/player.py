@@ -55,9 +55,9 @@ class Player:
 def minimax(node, depth, my_turn, n, color, opp_color, possible_moves, alpha, beta):
     best_move = None
     
+    # Return early if out of depth or game is won
     if depth == 0:
         return None, get_value(node, n, color, opp_color)
-
     if win_check(node, n) == color:
         return None, float('inf')
     elif win_check(node, n) is not None:
@@ -65,13 +65,15 @@ def minimax(node, depth, my_turn, n, color, opp_color, possible_moves, alpha, be
 
     if my_turn:
         max_value = float('-inf')
+        # Create all child nodes and generate states
         for i in possible_moves:
             if node.board.is_occupied(i):
                 continue
-
+            
             new_board = copy.deepcopy(node.board)
             new_board.place(color, i)
             child = Node(new_board)
+            # Recursive call at a lower depth
             value = minimax(child, depth - 1, False, n, color, opp_color, possible_moves, alpha, beta)[1]
 
             if value > max_value:
@@ -79,7 +81,8 @@ def minimax(node, depth, my_turn, n, color, opp_color, possible_moves, alpha, be
                 best_move = i
             elif best_move is None:
                 best_move = i
-
+                
+            #Prune results based on already discovered node values
             alpha = max(alpha, value)
             if beta <= alpha:
                 break
