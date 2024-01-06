@@ -9,67 +9,40 @@ class Node:
     def __init__(self, board):
         self.board = board
 
-
 class Player:
     def __init__(self, player, n):
-        """
-        Called once at the beginning of a game to initialise this player.
-        Set up an internal representation of the game state.
-
-        The parameter player is the string "red" if your player will
-        play as Red, or the string "blue" if your player will play
-        as Blue.
-        """
-        # put your code here
         self.color = player
-        if self.color == "red":
-            self.oppColor = "blue"
-        else:
-            self.oppColor = "red"
+        self.opp_color = "blue" if self.color == "red" else "red"
         self.board = Board(n)
-        self.possibleMoves = []
+        self.possible_moves = []
         self.n = n
-        self.firstMove = True
+        self.first_move = True
         for i in range(n):
             for j in range(n):
-                self.possibleMoves.append((i, j))
-        
-
+                self.possible_moves.append((i, j))
 
     def action(self):
-        """
-        Called at the beginning of your turn. Based on the current state
-        of the game, select an action to play.
-        """
-        # put your code here
-        if self.firstMove == True and self.color == "blue":
-            self.firstMove = False
+        if self.first_move and self.color == "blue":
+            self.first_move = False
             return ("STEAL", )
-        if self.firstMove == True and self.color == "red" and self.n % 2 != 0:
-            self.possibleMoves.remove((int((self.n - 1) /   2), int((self.n - 1) / 2 )))
-        random.shuffle(self.possibleMoves)
-        currentNode = Node(self.board)
+        if self.first_move and self.color == "red" and self.n % 2 != 0:
+            self.possible_moves.remove((int((self.n - 1) / 2), int((self.n - 1) / 2)))
+
+        random.shuffle(self.possible_moves)
+        current_node = Node(self.board)
+        
         if self.n < 7:
-            best_move, val = minimax(currentNode, 3, True, self.n, self.color, self.oppColor, self.possibleMoves, float('-inf'), float('inf'))
+            best_move, val = minimax(current_node, 3, True, self.n, self.color, self.opp_color, self.possible_moves, float('-inf'), float('inf'))
         else:
-            best_move, val = minimax(currentNode, 2, True, self.n, self.color, self.oppColor, self.possibleMoves, float('-inf'), float('inf'))
-        if self.firstMove:
-            self.firstMove = False
-            self.possibleMoves.append((int((self.n - 1) /   2), int((self.n - 1) / 2 )))
+            best_move, val = minimax(current_node, 2, True, self.n, self.color, self.opp_color, self.possible_moves, float('-inf'), float('inf'))
+
+        if self.first_move:
+            self.first_move = False
+            self.possible_moves.append((int((self.n - 1) / 2), int((self.n - 1) / 2)))
+        
         return ("PLACE", best_move[0], best_move[1])
+
     def turn(self, player, action):
-        """
-        Called at the end of each player's turn to inform this player of 
-        their chosen action. Update your internal representation of the 
-        game state based on this. The parameter action is the chosen 
-        action itself. 
-        
-        Note: At the end of your player's turn, the action parameter is
-        the same as what your player returned from the action method
-        above. However, the referee has validated it at this point.
-        """
-        
-        # put your code here
         if action[0] == "STEAL":
             for i in range(self.n):
                 for j in range(self.n):
@@ -79,93 +52,109 @@ class Player:
                         return
         self.board.place(player, tuple([action[1], action[2]]))
 
-def minimax(node, depth, myTurn, n, color, oppColor, possibleMoves, alpha, beta):
-    bestMove = None
+def minimax(node, depth, my_turn, n, color, opp_color, possible_moves, alpha, beta):
+    best_move = None
+    
     if depth == 0:
-        return None, getValue(node, n, color, oppColor)
-    if winCheck(node, n) == color:
+        return None, get_value(node, n, color, opp_color)
+
+    if win_check(node, n) == color:
         return None, float('inf')
-    elif winCheck(node, n) != None:
+    elif win_check(node, n) is not None:
         return None, float('-inf')
-    if myTurn:
-        maxValue = float('-inf')
-        for i in possibleMoves:
+
+    if my_turn:
+        max_value = float('-inf')
+        for i in possible_moves:
             if node.board.is_occupied(i):
                 continue
-            newBoard = copy.deepcopy(node.board)
-            newBoard.place(color, i)
-            child = Node(newBoard)
-            value = minimax(child, depth - 1, False, n, color, oppColor, possibleMoves, alpha, beta)[1]
-            if value > maxValue:
-                maxValue = value
-                bestMove = i
-            elif bestMove == None:
-                bestMove = i
+
+            new_board = copy.deepcopy(node.board)
+            new_board.place(color, i)
+            child = Node(new_board)
+            value = minimax(child, depth - 1, False, n, color, opp_color, possible_moves, alpha, beta)[1]
+
+            if value > max_value:
+                max_value = value
+                best_move = i
+            elif best_move is None:
+                best_move = i
+
             alpha = max(alpha, value)
             if beta <= alpha:
                 break
-        return bestMove, maxValue
+
+        return best_move, max_value
+
     else:
-        minValue = float('inf')
-        for i in possibleMoves:
+        min_value = float('inf')
+        for i in possible_moves:
             if node.board.is_occupied(i):
                 continue
-            newBoard = copy.deepcopy(node.board)
-            newBoard.place(oppColor, i)
-            child = Node(newBoard)
-            value = minimax(child, depth - 1, True, n, color, oppColor, possibleMoves, alpha, beta)[1]
-            if value < minValue:
-                minValue = value
-                bestMove = i
-            elif bestMove == None:
-                bestMove = i
+
+            new_board = copy.deepcopy(node.board)
+            new_board.place(opp_color, i)
+            child = Node(new_board)
+            value = minimax(child, depth - 1, True, n, color, opp_color, possible_moves, alpha, beta)[1]
+
+            if value < min_value:
+                min_value = value
+                best_move = i
+            elif best_move is None:
+                best_move = i
+
             beta = min(beta, value)
             if beta <= alpha:
                 break
-        return bestMove, minValue
 
+        return best_move, min_value
 
-
-
-def winCheck(node, n):
+def win_check(node, n):
     for i in range(n):
         if node.board.__getitem__((0, i)) == 'red':
             reachable = node.board.connected_coords((0, i))
             for (x, y) in reachable:
                 if x == n - 1:
                     return "red"
+
     for i in range(n):
         if node.board.__getitem__((i, 0)) == 'blue':
             reachable = node.board.connected_coords((i, 0))
             for (x, y) in reachable:
                 if y == n - 1:
                     return "blue"
+
     return None
 
-def getValue(node, n, color, oppColor):
-    redCount = 0
-    blueCount = 0
+def get_value(node, n, color, opp_color):
+    red_count = 0
+    blue_count = 0
     score = 0
+
     for i in node.board._data:
         for j in i:
             if j == 1:
-                redCount += 1
+                red_count += 1
             if j == 2:
-                blueCount += 1
+                blue_count += 1
+
     for r in range(n):
         for q in range(n):
-            token = node.board.__getitem__((r,q))
+            token = node.board.__getitem__((r, q))
             if token == color:
                 score -= (0.2 * abs(r - floor(n / 2.0)))
                 score -= (0.2 * abs(q - floor(n / 2.0)))
-            elif token == oppColor:
+            elif token == opp_color:
                 score += (0.2 * abs(r - floor(n / 2.0)))
                 score += (0.2 * abs(q - floor(n / 2.0)))
+
     if color == "red":    
-        score += redCount - blueCount
+        score += red_count - blue_count
     else:
-        score +=  blueCount - redCount
+        score +=  blue_count - red_count
+
     return score
+
     
     
 
